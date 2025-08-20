@@ -8,6 +8,8 @@ editor: visual
 library(tidyverse)
 library(here)
 library(janitor)
+library(ggplot2)
+library(paletteer)
 ```
 
 Ggplot basics
@@ -97,7 +99,6 @@ ggplot(data = lizards, aes(x = total_length, y = weight)) +
 ggplot(data = lizards, aes(x = weight, y = site)) +
   geom_jitter(aes(color = common_name)) +
   theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5))
   labs(x = "Weight (g)",
        y = "Study site",
        title = "Lizard weights across sites at Jornada", color = "species") # Trocar título da legenda
@@ -111,7 +112,128 @@ lizards_count <- lizards %>%
 
 ggplot(data = lizards_count,
        aes(x = n, y = fct_reorder(common_name, n))) + 
-  geom_col()
+  geom_col() +
 labs(x = "Individuals (n)",
      y = "Species common name")
+```
+
+## Advanced ggplot customization
+
+```{r}
+ggplot(data = lizards,
+       aes(x = total_length, y = weight)) +
+  geom_point() +
+  scale_x_continuous(breaks = c(0, 250, 500), 
+                     limits = c(0, 500)) +
+  scale_y_continuous(breaks = seq(from = 0,
+                                  to = 70,
+                                  by = 10),
+                     limits = c(0, 70)) +
+  labs(x = "Total length (mm)",
+       y = "Weight (grams)") +
+  theme_minimal()
+
+
+```
+
+```{r}
+# Counting up the number of lizards caught per day
+lizards_count <- lizards %>% 
+  mutate(date = lubridate::mdy(date)) %>% 
+  count(date)
+
+ggplot(data = lizards_count, aes(x = date, y = n)) +
+  geom_line() +
+  scale_x_date(breaks = scales::breaks_width("3 years"), # See date_breaks for next year!
+               labels = scales::label_date("'%y")) + # See date_labels for next year!
+  scale_y_log10(labels = scales::label_scientific())
+```
+
+### Customization of aesthetics with scale\_ functiond
+
+```{r}
+# color gradient with just 2 colors
+ggplot(data = lizards, aes(x = total_length, y = weight)) +
+  geom_point(aes(color = weight)) +
+  scale_color_gradient(low = "red", high = "navy")
+
+
+```
+
+```{r}
+# color gradient with more than 2 colors
+ggplot(data = lizards, aes(x = total_length, y = weight)) +
+  geom_point(aes(color = weight)) +
+  scale_color_gradientn(colors = c("orange", "red", "purple", "navy", "black"))
+```
+
+```{r}
+# Create a gradient of color bins
+ggplot(data = lizards, aes(x = total_length, y = weight)) +
+  geom_point(aes(color = weight)) +
+  scale_color_steps(low = "red", high = "navy", breaks = seq(0,80, by = 5))
+```
+
+```{r}
+ggplot(data = lizards,
+       aes(x = common_name, y = total_length)) +
+  geom_boxplot(aes(fill = common_name),
+               show.legend = F) +
+  coord_flip()
+
+```
+
+```{r}
+# ordering species based on median length
+lizards_mean <- lizards %>% 
+  mutate(common_name = fct_reorder(common_name, total_length, .fun = median))
+
+# Then make a graph (use View(palettes_d_names) to see other discrete palettes in {paletteer})
+
+ggplot(data = lizards_mean, aes(y = common_name, x = total_length)) +
+  geom_boxplot(aes(fill = common_name), show.legend = FALSE) +
+  scale_x_continuous(limits = c(0, 500)) +
+  scale_fill_paletteer_d("lisa::AlbrechtDurer") +
+  labs(y = "Lizard species",
+       x = "Total length (mm)") +
+  theme_minimal() +
+  theme(panel.grid.minor = element_blank())
+```
+
+```{r}
+library(patchwork)
+
+p1 <- ggplot(data = lizards_mean, aes(y = common_name, x = total_length)) +
+  geom_boxplot(aes(fill = common_name), show.legend = FALSE) +
+  scale_x_continuous(limits = c(0, 500)) +
+  scale_fill_paletteer_d("lisa::AlbrechtDurer") +
+  labs(y = "Lizard species",
+       x = "Total length (mm)") +
+  theme_minimal() +
+  theme(panel.grid.minor = element_blank())
+
+```
+
+```{r}
+p2 <- ggplot(data = lizards, aes(x = total_length, y = weight)) +
+  geom_point(aes(color = weight)) +
+  scale_color_steps(low = "red", high = "navy", breaks = seq(0,80, by = 5))
+```
+
+```{r}
+library(patchwork)
+
+# "|" puts plots next to each other
+(p1 | p2) & theme_minimal()
+# "/" puts plots on top of each other
+(p1 / p2) & theme_minimal()
+
+# Combination of next to and on top of each other
+p3 <- ((p1 | p2) / p2) & theme_minimal()
+
+ggsave("test.png", p3)
+```
+
+```{r}
+
 ```
