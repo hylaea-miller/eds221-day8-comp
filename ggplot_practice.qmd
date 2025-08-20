@@ -1,0 +1,117 @@
+---
+title: "Ggplot practice"
+format: html
+editor: visual
+---
+
+```{r}
+library(tidyverse)
+library(here)
+library(janitor)
+```
+
+Ggplot basics
+
+```{r}
+
+lizards <- read_csv(here("data_tidy", "lizards.csv"))
+```
+
+## the essentials
+
+-   data
+
+-   aesthetics
+
+-   geometry
+
+```{r}
+
+# ggplot essentials, 3 ways
+ggplot(data = lizards,
+       aes(x = total_length, y = weight)) + geom_point()
+
+
+# Second 
+ggplot(data = lizards) +
+  geom_point(aes(x = total_length, y = weight))
+
+# Third
+ggplot() +
+  geom_point(data = lizards,
+             aes(x = total_length, y = weight))
+```
+
+## Swap out geometries
+
+```{r}
+# bad example
+ggplot(data = lizards,
+       aes(x = total_length, y = weight)) + geom_line()
+```
+
+Some geometry types only need axis
+
+```{r}
+ggplot(data = lizards, aes(x = total_length)) + geom_histogram()
+
+```
+
+Jitterplots usually are best with one categorical and one continuous variable
+
+```{r}
+ggplot(data = lizards, aes(y = common_name, x = weight)) +
+  geom_jitter()
+```
+
+## Aesthetic mapping
+
+### Updating based on a constant value
+
+don't need to use the aes() function
+
+```{r}
+ggplot(data = lizards, aes(x = weight)) +
+  geom_histogram(color = "orange",
+                 fill = "purple",
+                 alpha = 0.3,
+                 linetype = "dotted")
+```
+
+## Updating aesthetics based on variables
+
+In that case, we need to use the aes() function
+
+```{r}
+ggplot(data = lizards, aes(x = total_length, y = weight)) +
+  geom_point(aes(color = common_name, size = total_length),
+             alpha = 0.3)
+
+```
+
+# Themes
+
+## Update axis labels
+
+```{r}
+ggplot(data = lizards, aes(x = weight, y = site)) +
+  geom_jitter(aes(color = common_name)) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+  labs(x = "Weight (g)",
+       y = "Study site",
+       title = "Lizard weights across sites at Jornada", color = "species") # Trocar título da legenda
+```
+
+## Reorder data
+
+```{r}
+lizards_count <- lizards %>% 
+  count(common_name)
+
+ggplot(data = lizards_count,
+       aes(x = n, y = fct_reorder(common_name, n))) + 
+  geom_col()
+labs(x = "Individuals (n)",
+     y = "Species common name")
+```
